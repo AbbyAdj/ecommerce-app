@@ -12,6 +12,6 @@ if __name__ == "__main__":
         app.run(debug=True, host="0.0.0.0", port=5000)
     elif env == "dev-deployed" or env == "prod-deployed":
         try:
-            serve(app, host="0.0.0.0", port=8080)
+            serve(app, host="0.0.0.0", port=8000)
         except Exception as e:
             pass
