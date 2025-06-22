@@ -14,4 +14,4 @@ if __name__ == "__main__":
         try:
             serve(app, host="0.0.0.0", port=8000)
         except Exception as e:
-            pass
+            print(e)
