@@ -1,10 +1,10 @@
 variable "db_username" {
-  type = string
+  type        = string
   description = "oltp database username"
 }
 
 variable "db_password" {
-  type = string
+  type        = string
   description = "oltp database password"
 }
 
