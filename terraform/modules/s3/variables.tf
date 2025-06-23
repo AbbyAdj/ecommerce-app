@@ -1,5 +1,5 @@
 variable "static_bucket_name" {
-  type = string
+  type        = string
   description = "bucket for static files"
 }
 
