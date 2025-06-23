@@ -51,8 +51,10 @@ security-test:
 	$(call execute_in_env, bandit -r ${WD}/*.py || true)
 
 ## Run the black code check
-run-formatters:
+run-black:
 	$(call execute_in_env, black -v ${WD})
+
+run-terraform-formatter:
 	terraform fmt -recursive
 
 ## Run the tests
@@ -64,7 +66,7 @@ check-coverage:
 	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run -m pytest && coverage report -m || true)
 
 ## Run all checks
-run-checks: security-test run-formatters run-tests check-coverage
+run-checks: security-test run-black run-tests check-coverage
 
 run-all : requirements checks-setup run-checks
 
