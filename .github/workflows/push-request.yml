@@ -1,0 +1,84 @@
+name: pull-request-check
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+    branches:
+      - master
+
+jobs:
+  run-tests:
+    name: run-tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+#    services:
+#      postgres:
+#        image: postgres:16
+#        ports:
+#          - 5432:5432
+#        env:
+#          POSTGRES_PASSWORD: postgres
+#        options: >-
+#          --health-cmd pg_isready
+#          --health-interval 10s
+#          --health-timeout 5s
+#          --health-retries 5
+    steps:
+#      - name: Install Postgres Client
+#        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+#      - name: Seed the database
+#        run: psql postgresql://postgres:postgres@localhost:5432/postgres -f tests/test-files/seed.sql
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Make
+#        env:
+#          DB_USER: postgres
+#          DB_PASSWORD: postgres
+#          DB_NAME: postgres
+#          DB_PORT: 5432
+#          DB_HOST: localhost
+#          S3_USER_STORAGE_BUCKET: ${{ secrets.S3_USER_STORAGE_BUCKET }}
+        run: |
+          make run-all
+
+  check-infrastructure:
+    name: check-infrastructure
+    runs-on: ubuntu-latest
+    environment: prod
+    needs: run-tests
+    defaults:
+      run:
+        shell: bash
+        working-directory: terraform/environments/prod
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format
+        run: terraform fmt -check
+
+      - name: Terraform Plan
+        run: terraform plan -input=false

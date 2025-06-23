@@ -1,0 +1,43 @@
+name: merge-to-main-and-terraform-deployment
+
+on:
+  pull_request:
+    types: closed
+
+jobs:
+  if_merged:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'master'
+    steps:
+    - run: |
+        echo -e "The PR was merged. \nBeginning deployment......\nPlease wait."
+
+  deploy-infrastructure:
+    name: deploy-infrastructure
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/environments/prod
+        shell: bash
+    environment: prod
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
