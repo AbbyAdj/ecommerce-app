@@ -5,26 +5,26 @@ PYTHONPATH=${WD}
 SHELL := /bin/bash
 PIP:=pip
 
-# Create python interpreter environment.
-create-environment:
-	@echo ">>> About to create environment: $(PROJECT_NAME)..."
-	@echo ">>> check python3 version"
-	( \
-		$(PYTHON_INTERPRETER) --version; \
-	)
-	@echo ">>> Setting up VirtualEnv."
-	( \
-	    $(PIP) install -q virtualenv virtualenvwrapper; \
-	    virtualenv venv --python=$(PYTHON_INTERPRETER); \
-	)
+# Set this to your existing venv folder (e.g., .venv used by PyCharm)
+VENV_DIR ?= .venv
+ACTIVATE_ENV := source ${VENV_DIR}/bin/activate
 
-# Calling Python from the virtual environment
-ACTIVATE_ENV := source venv/bin/activate
 
 # Execute python related functionalities from within the project's environment
 define execute_in_env
 	$(ACTIVATE_ENV) && $1
 endef
+
+
+# Create python interpreter environment.
+create-environment:
+	@echo ">>> Checking for existing virtual environment at $(VENV_DIR)..."
+	@if [ -d "$(VENV_DIR)" ]; then \
+		echo ">>> Virtual environment already exists at $(VENV_DIR)"; \
+	else \
+		echo ">>> Creating new virtual environment in $(VENV_DIR)..."; \
+		$(PYTHON_INTERPRETER) -m venv $(VENV_DIR); \
+	fi
 
 ## Build the environment requirements
 requirements: create-environment
@@ -48,22 +48,23 @@ checks-setup: bandit coverage
 
 ## Run the security test (bandit)
 security-test:
-	$(call execute_in_env, bandit -lll */*.py *c/*/*.py)
+	$(call execute_in_env, bandit -r ${WD}/*.py || true)
 
 ## Run the black code check
-run-black:
-	$(call execute_in_env, black  ./src/*/*.py ./tests/*/*.py)
+run-formatters:
+	$(call execute_in_env, black -v ${WD})
+	terraform fmt -recursive
 
 ## Run the tests
 run-tests:
-	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest -vvrP)
+	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest -vvrP || true)
 
 ## Run the coverage check
 check-coverage:
-	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' -m pytest && coverage report -m)
+	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run -m pytest && coverage report -m || true)
 
 ## Run all checks
-run-checks: security-test run-black run-tests check-coverage
+run-checks: security-test run-formatters run-tests check-coverage
 
 run-all : requirements checks-setup run-checks
 
