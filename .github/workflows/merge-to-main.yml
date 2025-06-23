@@ -6,7 +6,7 @@ on:
 
 jobs:
   if_merged:
-    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'master'
+    if: github.event.pull_request.merged == true
     steps:
     - run: |
         echo -e "The PR was merged. \nBeginning deployment......\nPlease wait."
